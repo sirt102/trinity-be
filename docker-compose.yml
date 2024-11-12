@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: trinity_postgres_db
+    environment:
+      POSTGRES_USER: ${POSTGRESQL_USER}
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_DB: ${POSTGRESQL_DBNAME}
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    networks:
+      - app_network
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./.configs/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRESQL_USER} -d ${POSTGRESQL_DBNAME} || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.0
+    container_name: trinity_redis_server
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - ./.configs/users.acl:/usr/local/etc/redis/users.acl # Detached file ACL into Redis container
+      - redis_data:/data # Persistent storage for Redis data
+    command: ["redis-server", "--aclfile", "/usr/local/etc/redis/users.acl"]
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: trinity-be-app:latest
+    container_name: trinity_golang_app
+    env_file:
+      - .env
+    command: ["./wait-for-it.sh", "db:5432", "--", "./main"]
+    ports:
+      - "8001:8082"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  db_data:
+  redis_data:
