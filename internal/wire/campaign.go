@@ -10,12 +10,13 @@ import (
 	"github.com/google/wire"
 )
 
-func InitUserRouterHandler() *handlers.UserHandler {
+func InitCampaignRouterHandler() *handlers.CampaignHandler {
 	wire.Build(
+		repositories.NewCampaignRepository,
 		repositories.NewUserRepository,
-		services.NewUserService,
-		handlers.NewUserHandler,
+		services.NewCampaignService,
+		handlers.NewCampaignHandler,
 	)
 
-	return new(handlers.UserHandler)
+	return new(handlers.CampaignHandler)
 }

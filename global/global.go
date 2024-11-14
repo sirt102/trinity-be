@@ -1,6 +1,7 @@
 package global
 
 import (
+	"errors"
 	"trinity-be/config"
 	"trinity-be/pkg/logger"
 
@@ -10,10 +11,10 @@ import (
 )
 
 var (
-	Config config.Config
-	Logger *logger.LoggerZap
+	Config       config.Config
+	Logger       *logger.LoggerZap
 	PostgresQLDB *gorm.DB
-	RedisDB *redis.Client
+	RedisDB      *redis.Client
 )
 
 func CheckErrorPanic(err error, errString string) {
@@ -21,4 +22,18 @@ func CheckErrorPanic(err error, errString string) {
 		Logger.DPanic(errString, zap.Error(err))
 		panic(err)
 	}
+}
+
+func LogError(err error, errString string) {
+	if errString == "" {
+		errString = err.Error()
+	}
+
+	if err != nil {
+		Logger.Error(errString, zap.Error(err))
+	}
+}
+
+func NewError(errMessage string) error {
+	return errors.New(errMessage)
 }

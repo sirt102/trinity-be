@@ -4,90 +4,116 @@
 -- Enable the UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create the Users table
-CREATE TABLE IF NOT EXISTS Users (
-    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Create the roles table
+CREATE TABLE IF NOT EXISTS roles (
+    role_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(50) UNIQUE NOT NULL,
+    admin_permission BOOLEAN DEFAULT FALSE
 );
 
--- Create the Campaigns table
-CREATE TABLE IF NOT EXISTS Campaigns (
+-- Create the subscriptions table
+CREATE TABLE IF NOT EXISTS subscriptions (
+    subscription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    level INT NOT NULL,
+    description TEXT
+);
+
+-- Create the users table
+CREATE TABLE IF NOT EXISTS users (
+    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    role_id UUID REFERENCES roles(role_id)
+);
+
+-- Create the campaigns table
+CREATE TABLE IF NOT EXISTS campaigns (
     campaign_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    discount_rate DECIMAL(5, 2) NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
-    max_redemptions INT NOT NULL
+    max_redemptions INT NOT NULL,
+    available INT NOT NULL
 );
 
--- Create the Vouchers table
-CREATE TABLE IF NOT EXISTS Vouchers (
+-- Create the vouchers table
+CREATE TABLE IF NOT EXISTS vouchers (
     voucher_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    campaign_id UUID REFERENCES Campaigns(campaign_id),
-    user_id UUID REFERENCES Users(user_id),
-    is_valid BOOLEAN DEFAULT TRUE,
-    expiry_date DATE,
-    redeemed_at TIMESTAMP,
-    UNIQUE (user_id, campaign_id)
+    campaign_id UUID REFERENCES campaigns(campaign_id),
+    discount_rate DECIMAL(5, 2) DEFAULT 0.00,
+    expiry_date DATE NOT NULL,
+    is_valid BOOLEAN DEFAULT TRUE
 );
 
--- Create the Transactions table
-CREATE TABLE IF NOT EXISTS Transactions (
+-- Create the user_vouchers table to link vouchers with specific users
+CREATE TABLE IF NOT EXISTS user_vouchers (
+    user_voucher_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    voucher_id UUID REFERENCES vouchers(voucher_id),
+    user_id UUID REFERENCES users(user_id),
+    redeemed_at TIMESTAMP,
+    UNIQUE (user_id, voucher_id)
+);
+
+-- Create the transactions table
+CREATE TABLE IF NOT EXISTS transactions (
     transaction_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES Users(user_id),
-    voucher_id UUID REFERENCES Vouchers(voucher_id),
+    user_id UUID REFERENCES users(user_id),
+    voucher_id UUID REFERENCES vouchers(voucher_id),
+    subscription_id UUID REFERENCES subscriptions(subscription_id),
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     amount DECIMAL(10, 2) NOT NULL,
-    final_amount DECIMAL(10, 2) NOT NULL
+    final_amount DECIMAL(10, 2) NOT NULL,
+    status_payment VARCHAR(20) NOT NULL
 );
 
--- Create the Notifications table
-CREATE TABLE IF NOT EXISTS Notifications (
-    notification_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES Users(user_id),
-    campaign_id UUID REFERENCES Campaigns(campaign_id),
-    message TEXT,
-    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Create the user_subscriptions table to track user subscriptions over time
+CREATE TABLE IF NOT EXISTS user_subscriptions (
+    user_subscription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    subscription_id UUID REFERENCES subscriptions(subscription_id) ON DELETE CASCADE,
+    subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expiry_date TIMESTAMP
 );
 
--- Create the CampaignAnalytics table
-CREATE TABLE IF NOT EXISTS CampaignAnalytics (
-    campaign_id UUID PRIMARY KEY REFERENCES Campaigns(campaign_id),
-    issued_vouchers INT,
-    redeemed_vouchers INT,
-    conversion_rate DECIMAL(5, 2),
-    total_discount_amount DECIMAL(10, 2)
-);
+-- Insert sample data into roles
+INSERT INTO roles (role_id, name, admin_permission) VALUES
+(uuid_generate_v4(), 'admin', TRUE),
+(uuid_generate_v4(), 'user', FALSE);
 
--- Insert sample data into Users
-INSERT INTO Users (user_id, email) VALUES
-(uuid_generate_v4(), 'alice@example.com'),
-(uuid_generate_v4(), 'bob@example.com'),
-(uuid_generate_v4(), 'charlie@example.com');
+-- Insert sample data into subscriptions
+INSERT INTO subscriptions (subscription_id, name, price, level, description) VALUES
+(uuid_generate_v4(), 'bronze', 60.00, 0, 'Bronze plan with basic access'),
+(uuid_generate_v4(), 'silver', 100.00, 1, 'Silver plan with additional features');
 
--- Insert sample data into Campaigns
-INSERT INTO Campaigns (campaign_id, name, discount_rate, start_date, end_date, max_redemptions) VALUES
-(uuid_generate_v4(), 'New Year Sale', 20.00, '2024-01-01', '2024-01-31', 1000),
-(uuid_generate_v4(), 'Spring Discount', 15.00, '2024-03-01', '2024-03-31', 500),
-(uuid_generate_v4(), 'Summer Special', 10.00, '2024-06-01', '2024-06-30', 300);
+-- Insert sample data into users
+INSERT INTO users (user_id, user_name, email, role_id) VALUES
+(uuid_generate_v4(), 'alice', 'alice@example.com', (SELECT role_id FROM roles WHERE name = 'admin')),
+(uuid_generate_v4(), 'bob', 'bob@example.com', (SELECT role_id FROM roles WHERE name = 'user')),
+(uuid_generate_v4(), 'charlie', 'charlie@example.com', (SELECT role_id FROM roles WHERE name = 'user'));
 
--- Insert sample data into Vouchers (assuming user and campaign IDs exist)
-INSERT INTO Vouchers (voucher_id, campaign_id, user_id, is_valid, expiry_date) VALUES
-(uuid_generate_v4(), (SELECT campaign_id FROM Campaigns WHERE name='New Year Sale'), (SELECT user_id FROM Users WHERE email='alice@example.com'), TRUE, '2024-01-31'),
-(uuid_generate_v4(), (SELECT campaign_id FROM Campaigns WHERE name='Spring Discount'), (SELECT user_id FROM Users WHERE email='bob@example.com'), TRUE, '2024-03-31');
+-- Insert sample data into campaigns
+INSERT INTO campaigns (campaign_id, name, start_date, end_date, max_redemptions, available) VALUES
+(uuid_generate_v4(), 'end_of_year_sale', '2024-11-11', '2024-12-12', 100, 100),
+(uuid_generate_v4(), 'new_member', '2024-01-01', '2025-01-31', 200, 200);
 
--- Insert sample data into Transactions
-INSERT INTO Transactions (transaction_id, user_id, voucher_id, amount, final_amount) VALUES
-(uuid_generate_v4(), (SELECT user_id FROM Users WHERE email='alice@example.com'), (SELECT voucher_id FROM Vouchers WHERE user_id=(SELECT user_id FROM Users WHERE email='alice@example.com') AND is_valid=TRUE), 100.00, 80.00),
-(uuid_generate_v4(), (SELECT user_id FROM Users WHERE email='bob@example.com'), (SELECT voucher_id FROM Vouchers WHERE user_id=(SELECT user_id FROM Users WHERE email='bob@example.com') AND is_valid=TRUE), 50.00, 42.50);
+-- Insert sample data into vouchers (general voucher information)
+INSERT INTO vouchers (voucher_id, campaign_id, discount_rate, expiry_date) VALUES
+(uuid_generate_v4(), (SELECT campaign_id FROM campaigns WHERE name='new_member'), 0.20, '2025-01-31'),
+(uuid_generate_v4(), (SELECT campaign_id FROM campaigns WHERE name='end_of_year_sale'), 0.30, '2024-12-12');
 
--- Insert sample data into Notifications
-INSERT INTO Notifications (notification_id, user_id, campaign_id, message) VALUES
-(uuid_generate_v4(), (SELECT user_id FROM Users WHERE email='alice@example.com'), (SELECT campaign_id FROM Campaigns WHERE name='New Year Sale'), 'Your voucher is ready for New Year Sale!'),
-(uuid_generate_v4(), (SELECT user_id FROM Users WHERE email='bob@example.com'), (SELECT campaign_id FROM Campaigns WHERE name='Spring Discount'), 'Spring Discount is live now!');
+-- Insert sample data into user_vouchers to assign vouchers to users
+INSERT INTO user_vouchers (user_voucher_id, voucher_id, user_id) VALUES
+(uuid_generate_v4(), (SELECT voucher_id FROM vouchers WHERE discount_rate=0.20), (SELECT user_id FROM users WHERE email='alice@example.com')),
+(uuid_generate_v4(), (SELECT voucher_id FROM vouchers WHERE discount_rate=0.30), (SELECT user_id FROM users WHERE email='bob@example.com'));
 
--- Insert sample data into CampaignAnalytics
-INSERT INTO CampaignAnalytics (campaign_id, issued_vouchers, redeemed_vouchers, conversion_rate, total_discount_amount) VALUES
-((SELECT campaign_id FROM Campaigns WHERE name='New Year Sale'), 500, 250, 50.00, 5000.00),
-((SELECT campaign_id FROM Campaigns WHERE name='Spring Discount'), 300, 150, 50.00, 2250.00);
+-- Insert sample data into transactions with updated amounts and correct voucher application
+-- INSERT INTO transactions (transaction_id, user_id, voucher_id, subscription_id, transaction_date, amount, final_amount, status_payment) VALUES
+-- (uuid_generate_v4(), (SELECT user_id FROM users WHERE email='alice@example.com'), 
+--     (SELECT voucher_id FROM vouchers WHERE discount_rate=0.20), 
+--     (SELECT subscription_id FROM subscriptions WHERE name='silver'), CURRENT_TIMESTAMP, 100.00, 0, 'pending'),
+-- (uuid_generate_v4(), (SELECT user_id FROM users WHERE email='bob@example.com'), 
+--     (SELECT voucher_id FROM vouchers WHERE discount_rate=0.30), 
+--     (SELECT subscription_id FROM subscriptions WHERE name='silver'), CURRENT_TIMESTAMP, 100.00, 0, 'pending');

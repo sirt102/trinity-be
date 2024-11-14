@@ -9,16 +9,14 @@ import (
 type UserRouter struct{}
 
 func (tr *UserRouter) InitUserRouter(r *gin.RouterGroup) {
-	// non di
-    userHandler := wire.InitUserRouterHandler()
-  
-	
+	userHandler := wire.InitUserRouterHandler()
+
 	// non-auth routes
 	userRouterPublic := r.Group("/users")
 	{
-		userRouterPublic.GET("/" )
-		userRouterPublic.GET("/:id")
-        userRouterPublic.POST("/register", userHandler.Register)
+		userRouterPublic.GET("/details", userHandler.GetUserByEmail)
+		userRouterPublic.GET("/details/:user_id", userHandler.GetUserByID)
+		userRouterPublic.POST("/register", userHandler.Register)
 	}
 
 	// auth routes

@@ -7,19 +7,21 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func InitPostgresQL() {
 	config := global.Config.PostgresQL
 
 	connectionString := fmt.Sprintf(
-    "host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-    config.Host, config.Port, config.User, config.Password, config.DBName,
-)
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		config.Host, config.Port, config.User, config.Password, config.DBName,
+	)
 
-  db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{
-        SkipDefaultTransaction: false,
-    })
+	db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{
+		SkipDefaultTransaction: false,
+		Logger:                 logger.Default.LogMode(logger.Info),
+	})
 	global.CheckErrorPanic(err, "PostgresQL connection failed")
 
 	global.Logger.Info("PostgresQL connected successfully!")

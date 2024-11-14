@@ -3,9 +3,9 @@ package entities
 import "github.com/google/uuid"
 
 type Role struct {
-	PublicID uuid.UUID `gorm:"column:public_id; type:char(36);not null; index:idx_uuid" json:"public_id"`
-    RoleName string `gorm:"column:role_name; type:varchar(255);not null" json:"role_name"`
-    RoleNote string `gorm:"column:role_note; type:varchar(255);not null" json:"role_note"`
+	RoleID          uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"role_id"`
+	Name            string    `gorm:"type:varchar(50);unique;not null" json:"name" binding:"omitempty,oneof=admin user"`
+	AdminPermission bool      `gorm:"type:boolean;default:false" json:"admin_permission" binding:"-"`
 }
 
 func (r *Role) TableName() string {

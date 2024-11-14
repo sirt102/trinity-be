@@ -14,34 +14,33 @@ type LoggerZap struct {
 	*zap.Logger
 }
 
-
 func NewLogger() *LoggerZap {
 	encoder := getEncodeLogger()
 	// Temp: Hard code log level
-	logLeve := "debug"
+	logLevel := "debug"
 	var level zapcore.Level
 
-	switch logLeve {
+	switch logLevel {
 	case "debug":
 		level = zapcore.DebugLevel
-		case "info":
+	case "info":
 		level = zapcore.InfoLevel
-		case "warn":
+	case "warn":
 		level = zapcore.WarnLevel
-		case "error":
+	case "error":
 		level = zapcore.ErrorLevel
-		case "dpanic":
+	case "dpanic":
 		level = zapcore.DPanicLevel
-		default:
+	default:
 		level = zapcore.InfoLevel
 	}
 
 	hook := lumberjack.Logger{
 		Filename:   "./logs/dev.xxx.log",
-		MaxSize: 500,
+		MaxSize:    500,
 		MaxBackups: 3,
-		MaxAge: 28,
-		Compress: true,
+		MaxAge:     28,
+		Compress:   true,
 	}
 	core := zapcore.NewCore(encoder,
 		zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout), zapcore.AddSync(&hook)),
@@ -53,7 +52,7 @@ func NewLogger() *LoggerZap {
 
 func getEncodeLogger() zapcore.Encoder {
 	encoderConfig := zap.NewProductionEncoderConfig()
-	
+
 	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	encoderConfig.TimeKey = "time"
 
@@ -65,7 +64,7 @@ func getEncodeLogger() zapcore.Encoder {
 
 func getWriterSync() zapcore.WriteSyncer {
 	fileName := fmt.Sprintf("./logs/%s.log", time.Now().Format("2006-01-02"))
-	logFileWrite,_ := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	logFileWrite, _ := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	syncConsole := zapcore.AddSync(os.Stderr)
 
 	return zapcore.NewMultiWriteSyncer(syncConsole, logFileWrite)

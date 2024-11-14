@@ -10,12 +10,12 @@ import (
 	"github.com/google/wire"
 )
 
-func InitUserRouterHandler() *handlers.UserHandler {
+func InitVoucherRouterHandler() *handlers.VoucherHandler {
 	wire.Build(
-		repositories.NewUserRepository,
-		services.NewUserService,
-		handlers.NewUserHandler,
+		repositories.NewVoucherRepository,
+		services.NewVoucherService,
+		handlers.NewVoucherHandler,
 	)
 
-	return new(handlers.UserHandler)
+	return new(handlers.VoucherHandler)
 }
