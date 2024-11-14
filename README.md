@@ -113,6 +113,7 @@ _Note:_
 - Have Golang (use for local run) and Docker is running in local machine.
 - Change Directory (cd command) to the root of project folder.
 - Prepare .env file
+- Prepare go swagger: `go get -u github.com/swaggo/swag `
 
   `cp .env.example .env`
 
@@ -126,8 +127,14 @@ _Note:_
 
 `docker-compose down -v && docker-compose --build redis db -d`
 
-`go mod download && go run ./cmd/server.main.go`
+`go mod download && go run ./cmd/server/main.go`
 
 ## Run Golang in Docker
 
 `docker-compose down -v && docker-compose --build -d`
+
+# Swagger - API Document
+
+Run `swag init -g ./cmd/server/main.go -o ./cmd/swag/docs`
+
+Swagger Endpoint: /swagger/index.html

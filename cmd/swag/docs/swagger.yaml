@@ -1,0 +1,18 @@
+basePath: /v1
+host: localhost:8082
+info:
+  contact:
+    email: trisnm102@gmail.com
+    name: TriNM
+  description: This is a sample Trinity server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: API Trinity Server
+  version: 1.0.0
+paths: {}
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"
